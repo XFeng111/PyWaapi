@@ -1,4 +1,4 @@
-# PyWaapi_GetOrigionalFiles
+# PyWaapi_GetOrigionalFiles_Selected
 from waapi import WaapiClient, CannotConnectToWaapiException
 from pprint import pprint
 import os
