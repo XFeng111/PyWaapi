@@ -1,0 +1,17 @@
+{
+  "commands": [
+    {
+      "id": "ak.LeafXie_CopyOriginalFromSelected",
+      "displayName": "CopyOriginalFromSelected",
+      "startMode": "SingleSelectionSingleProcess",
+      "program": "C:\\Users\\Admin\\AppData\\Roaming\\Audiokinetic\\Wwise\\Add-ons\\WAAPI_GetOrigionalFiles_Selected.exe",
+      "contextMenu": {
+        "basePath": "",
+        "enabledFor": ""
+      },
+      "mainMenu": {
+        "basePath": "Edit"
+      }
+    }
+  ]
+}
