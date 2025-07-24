@@ -1,0 +1,2 @@
+
+Py_Waapi_SetNotes
