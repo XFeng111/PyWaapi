@@ -1,0 +1,31 @@
+{
+   "commands":[
+       {
+           "id":"T_CopyOriginalFromSelected",
+           "displayName":"CopyOriginalFromSelected",  
+		   "startMode":"MultipleSelectionMultipleProcesses",                    
+           "program":"E:\\VSCode_WorkSpace\\dist_tools\\WAAPI_GetOrigionalFiles_Slected.exe",         
+           "contextMenu":{
+                    "basePath" : "Tools",  // 右键菜单的子菜单名称（展开栏）
+                    "enabledFor" :  ""
+               },
+           "mainMenu":{
+                   "basePath":"Edit" // 主菜单 Edit 下的菜单
+               }                  
+       },    
+
+       {
+           "id":"T_Wwise_SetNotes_Tool",
+           "displayName":"Wwise_SetNotes_Tool",  
+		   "startMode":"MultipleSelectionMultipleProcesses",                    
+           "program":"E:\\VSCode_WorkSpace\\dist_tools\\Wwise_SetNotes_Tool.exe",         
+           "contextMenu":{
+                    "basePath" : "Tools",  // 右键菜单的子菜单名称（展开栏）
+                    "enabledFor" :  ""
+               },
+           "mainMenu":{
+                   "basePath":"Edit" // 主菜单 Edit 下的菜单
+               }                  
+       }    
+   ]
+}
