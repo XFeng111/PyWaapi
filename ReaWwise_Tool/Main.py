@@ -1,5 +1,7 @@
 import sys
 import io
+import asyncio
+import threading
 
 from PyQt6 import QtGui, QtWidgets
 from PyQt6.QtWidgets import QApplication
@@ -8,30 +10,29 @@ from PyQt6.QtCore import QObject, pyqtSignal
 
 from Record import WwiseProfilerController, OBSController
 from Ui_WindowShow import Ui_ReaWwise_Tool
-from ReaAction import ReaAction
+from ReaAction import Rea_Action, executor as rea_executor
 
 
-# 输出打印消息到 ListView
-# 输出重定向类：捕获print内容并通过信号发送
+# 输出重定向类：捕获print内容
 class PrintRedirector(io.StringIO):
     def __init__(self, signal):
         super().__init__()
-        self.signal = signal  # 用于传递输出内容的信号
+        self.signal = signal
 
     def write(self, text):
-        super().write(text)  # 保留原始输出功能
-        if text.strip():  # 过滤空行
-            self.signal.emit(text.strip())  # 发送非空内容到UI
+        super().write(text)
+        if text.strip():
+            self.signal.emit(text.strip())
 
     def flush(self):
         super().flush()
 
 
-# 信号中转类（用于跨线程安全更新UI）
-class SignalEmitter(QObject): 
-    print_signal = pyqtSignal(str)  # 传递print内容的信号
+# 信号中转类（跨线程安全更新UI）
+class SignalEmitter(QObject):
+    print_signal = pyqtSignal(str)
 
-
+# -------------------------------------------------------------------------------
 
 class ReaWwise_Tool(QtWidgets.QMainWindow, Ui_ReaWwise_Tool):
     def __init__(self):
@@ -40,80 +41,234 @@ class ReaWwise_Tool(QtWidgets.QMainWindow, Ui_ReaWwise_Tool):
         
         # 初始化列表模型
         self.model = QtGui.QStandardItemModel()
-        # 绑定listview
         self.listView.setModel(self.model)
 
-        # 初始化信号发射器和输出重定向
+        # 初始化信号和输出重定向
         self.signal_emitter = SignalEmitter()
-        self.signal_emitter.print_signal.connect(self.add_log)  # 绑定信号到日志更新函数
+        self.signal_emitter.print_signal.connect(self.add_log)
         self.redirector = PrintRedirector(self.signal_emitter.print_signal)
-        sys.stdout = self.redirector  # 重定向stdout到自定义输出流
+        self.original_stdout = sys.stdout  # 保存原始stdout
+        sys.stdout = self.redirector
 
-        # 初始化类
+        # 初始化控制器
         self.wwise = WwiseProfilerController()
         self.obs = OBSController()
-        self.rp = ReaAction()
+        self.rp = Rea_Action()  
 
-    # --------------------------------------------------------------------
-        # 绑定按钮 录制，结束，Save Log
-        self.RecordingStart.clicked.connect(self.StartCapture)
-        self.RecordingStop.clicked.connect(self.StopCapture)
-        self.SaveLog.clicked.connect(self.wwise.save_capture)
+        # 线程和任务跟踪
+        self.threads = []  # 跟踪所有创建的线程
+        self.running_tasks = set()  # 跟踪异步任务
+
+        # 绑定按钮事件
+        self._bind_buttons()
+
+# -------------------------------------------------------------------------------
+
+    def _bind_buttons(self):
+        """绑定所有按钮事件（异步执行）"""
+        # 录制控制
+        self.RecordingStart.clicked.connect(self._run_async(self.StartCapture))
+        self.RecordingStop.clicked.connect(self._run_async(self.StopCapture))
+        self.SaveLog.clicked.connect(self._run_async(self.wwise.save_capture))
         
-        # 绑定按钮 连接Capture，播放，停止
+        # 播放控制
         self.LinkCapture.stateChanged.connect(self.link_capture)
-        self.Start.clicked.connect(self.rp.Start)
-        self.Stop.clicked.connect(self.rp.Stop)
+        self.Start.clicked.connect(self._run_async(self.rp.Start))
+        self.Stop.clicked.connect(self._run_async(self.rp.Stop))
 
-        # 绑定按钮  WwhispeAssistant，导入视频，CaptureLog.txt
-        self.WwhispeAssistant.clicked.connect(self.rp.WwhispeAssistant)
-        self.InsertMedia.clicked.connect(self.rp.InsertMedia)
-        self.InputLog.clicked.connect(self.input_log)
-
-        # 绑定按钮 转到上一个标记，转到下一个标记
-        self.PreviouMarker.clicked.connect(self.rp.PreviouMarker)
-        self.NextMarker.clicked.connect(self.rp.NextMarker)
-
-        # 绑定按钮 清空
+        # 其他操作
+        self.WwhispeAssistant.clicked.connect(self._run_async(self.rp.WwhispeAssistant))
+        self.InsertMedia.clicked.connect(self._run_async(self.rp.InsertMedia))
+        self.InputLog.clicked.connect(self._run_async(self.rp.InputLog))
+        self.PreviouMarker.clicked.connect(self._run_async(self.rp.PreviouMarker))
+        self.NextMarker.clicked.connect(self._run_async(self.rp.NextMarker))
         self.Clear.clicked.connect(self.clear_Log)
 
-    # ---------------------------------------------------------------------
-    # 定义按钮函数
-    def StartCapture(self):
-        self.wwise.start_capture()
-        self.obs.recording_start()
+# -------------------------------------------------------------------------------
 
-    def StopCapture(self):
-        self.wwise.stop_capture()
-        self.obs.recording_stop()
+    def _run_async(self, coro):
+        """异步任务执行包装器（线程安全）"""
+        def wrapper():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                # 创建任务并跟踪
+                task = loop.create_task(coro())
+                self.running_tasks.add(task)
+                
+                def task_done(fut):
+                    self.running_tasks.discard(fut)
+                
+                task.add_done_callback(task_done)
+                loop.run_until_complete(task)
+            finally:
+                loop.close()
+        
+        thread = threading.Thread(target=wrapper, daemon=True)
+        self.threads.append(thread)
+        return lambda: thread.start()
+
+    # 核心业务逻辑
+    async def StartCapture(self):
+        wwise_result = await self.wwise.start_capture()
+        obs_result = await self.obs.recording_start()
+        if wwise_result:
+            print(wwise_result)
+        if obs_result:
+            print(obs_result)
+
+    async def StopCapture(self):
+        wwise_result = await self.wwise.stop_capture()
+        obs_result = await self.obs.recording_stop()
+        if wwise_result:
+            print(wwise_result)
+        if obs_result:
+            print(obs_result)
 
     def link_capture(self, state):
-        """复选框状态变化时触发：勾选时启动捕获，取消勾选时停止捕获"""
-        if state == 2:  # Qt.CheckState.Checked == 2
-            self.wwise.start_capture()
-            print("已连接Capture")
-        else:  # 未勾选状态
-            self.wwise.stop_capture()
-            print("已断开Capture")
-
-    def input_log(self):
-        self.rp.InputLog()
-        self.rp.rename_camera_tracks_to_listener()
+        """Capture联动（同步操作，内部调用异步方法）"""
+        async def _link():
+            if state == 2:
+                result = await self.wwise.start_capture()
+                print(result or "已连接Capture")
+            else:
+                result = await self.wwise.stop_capture()
+                print(result or "已断开Capture")
+        self._run_async(_link)()
 
     def clear_Log(self):
         self.model.clear()
 
     def add_log(self, text):
-        """向listView添加日志内容"""
+        """添加日志到ListView"""
         item = QStandardItem(text)
         self.model.appendRow(item)
-        self.listView.scrollToBottom()  # 自动滚动到底部
+        self.listView.scrollToBottom()
 
+    # -------------------------------------------------------------------------------
+    # 资源清理与程序退出处理
+    # -------------------------------------------------------------------------------
 
-# 主程序执行---------------------------------------------------------------------
+    def closeEvent(self, event: QtGui.QCloseEvent):
+        """窗口关闭时清理所有资源"""
+        self.add_log("开始清理资源，准备退出程序...")
+        
+        # 1. 清理异步任务
+        self._cleanup_async_tasks()
+        
+        # 2. 停止所有控制器
+        self._stop_controllers()
+        
+        # 3. 关闭所有线程池
+        self._shutdown_all_executors()
+        
+        # 4. 等待线程结束
+        self._join_threads(timeout=2.0)
+        
+        # 5. 恢复标准输出
+        sys.stdout = self.original_stdout
+        
+        # 6. 打印退出信息
+        print("程序已正常退出")
+        
+        # 接受关闭事件
+        event.accept()
+
+    def _stop_controllers(self):
+        """停止所有控制器并释放资源，调整关闭顺序"""
+        # 首先处理Wwise控制器，确保Waapi线程优先关闭
+        if hasattr(self, 'wwise'):
+            # 先停止捕获
+            if hasattr(self.wwise, 'stop_capture'):
+                try:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    loop.run_until_complete(self.wwise.stop_capture())
+                    loop.close()
+                except Exception as e:
+                    self.add_log(f"停止Wwise捕获时出错: {e}")
+            
+            # 再关闭控制器
+            if hasattr(self.wwise, 'close'):
+                self.wwise.close()
+
+        # 处理OBS控制器
+        if hasattr(self, 'obs'):
+            if hasattr(self.obs, 'recording_stop'):
+                try:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    loop.run_until_complete(self.obs.recording_stop())
+                    loop.close()
+                except Exception as e:
+                    self.add_log(f"停止OBS录制时出错: {e}")
+            
+            if hasattr(self.obs, 'close'):
+                self.obs.close()
+
+        # 处理ReaAction
+        if hasattr(self, 'rp') and hasattr(self.rp, 'Stop'):
+            try:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                loop.run_until_complete(self.rp.Stop())
+                loop.close()
+            except Exception as e:
+                self.add_log(f"停止ReaAction时出错: {e}")
+
+    # 修改_cleanup_async_tasks方法，处理Waapi相关任务
+    def _cleanup_async_tasks(self):
+        """清理所有运行中的异步任务，包括Waapi相关任务"""
+        if not self.running_tasks:
+            return
+            
+        self.add_log(f"正在终止 {len(self.running_tasks)} 个异步任务...")
+        
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        async def cancel_tasks():
+            for task in self.running_tasks:
+                if not task.done():
+                    task.cancel()
+                    try:
+                        # 增加超时处理，避免无限等待
+                        await asyncio.wait_for(task, timeout=1.0)
+                    except (asyncio.CancelledError, asyncio.TimeoutError, RuntimeError):
+                        pass  # 忽略取消、超时和运行时错误
+        
+        try:
+            loop.run_until_complete(cancel_tasks())
+        finally:
+            loop.close()
+        self.running_tasks.clear()
+
+    def _shutdown_all_executors(self):
+        """关闭所有线程池"""
+        # 关闭ReaAction的全局线程池
+        rea_executor.shutdown(wait=True, cancel_futures=True)
+        
+        # 关闭Wwise控制器的线程池
+        if hasattr(self.wwise, '_executor'):
+            self.wwise._executor.shutdown(wait=True, cancel_futures=True)
+        
+        # 关闭OBS控制器的线程池
+        if hasattr(self.obs, '_executor'):
+            self.obs._executor.shutdown(wait=True, cancel_futures=True)
+
+    def _join_threads(self, timeout):
+        """等待线程结束，超时则强制标记为daemon"""
+        for thread in self.threads:
+            if thread.is_alive():
+                thread.join(timeout)
+                if thread.is_alive():
+                    thread.daemon = True  # 确保随主线程退出
+        self.threads.clear()
+
+# -------------------------------------------------------------------------------
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = ReaWwise_Tool()
     ex.show()
     sys.exit(app.exec())
-
