@@ -87,12 +87,11 @@ class ReaWwise_Tool(QtWidgets.QMainWindow, Ui_ReaWwise_Tool):
 # -------------------------------------------------------------------------------
 
     def _run_async(self, coro):
-        """异步任务执行包装器（线程安全）"""
+        """修复线程只能启动一次的问题，每次调用创建新线程"""
         def wrapper():
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             try:
-                # 创建任务并跟踪
                 task = loop.create_task(coro())
                 self.running_tasks.add(task)
                 
@@ -104,9 +103,13 @@ class ReaWwise_Tool(QtWidgets.QMainWindow, Ui_ReaWwise_Tool):
             finally:
                 loop.close()
         
-        thread = threading.Thread(target=wrapper, daemon=True)
-        self.threads.append(thread)
-        return lambda: thread.start()
+        # 关键修改：每次调用返回新线程的启动逻辑，而非固定线程
+        def thread_starter():
+            thread = threading.Thread(target=wrapper, daemon=True)
+            self.threads.append(thread)
+            thread.start()
+        
+        return thread_starter  # 返回创建并启动新线程的函数
 
     # 核心业务逻辑
     async def StartCapture(self):
