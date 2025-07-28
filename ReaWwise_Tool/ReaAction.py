@@ -75,7 +75,7 @@ class Rea_Action:
 
     @staticmethod
     @async_reapy
-    def trigger_custom_script_by_guid(guid):
+    def trigger_custom_script_by_guid(guid,name):
         """异步触发自定义脚本"""
         try:
             if not Rea_Action._ensure_connection():
@@ -88,7 +88,7 @@ class Rea_Action:
             
             action_id = reapy.get_command_id(guid)
             reapy.perform_action(action_id)
-            return f"已触发脚本（GUID: {guid}）"
+            return f"已触发Rea_Action: {name}"
         except Exception as e:
             return f"执行失败: {e}"
 
