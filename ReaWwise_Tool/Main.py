@@ -83,6 +83,7 @@ class ReaWwise_Tool(QtWidgets.QMainWindow, Ui_ReaWwise_Tool):
         self.PreviouMarker.clicked.connect(self._run_async(self.rp.PreviouMarker))
         self.NextMarker.clicked.connect(self._run_async(self.rp.NextMarker))
         self.Clear.clicked.connect(self.clear_Log)
+        # self.Reconnect.clicked.connect(self.reconnect_all)
 
 # -------------------------------------------------------------------------------
 
@@ -142,11 +143,22 @@ class ReaWwise_Tool(QtWidgets.QMainWindow, Ui_ReaWwise_Tool):
     def clear_Log(self):
         self.model.clear()
 
+        # 清理异步任务
+        self._cleanup_async_tasks()
+
     def add_log(self, text):
         """添加日志到ListView"""
         item = QStandardItem(text)
         self.model.appendRow(item)
         self.listView.scrollToBottom()
+
+    # def reconnect_all(self):
+    #     self.wwise.find_Wwise_window()
+    #     self.wwise.initialize_connection()
+
+    #     self.obs.find_obs_window()
+    #     self.rp.ensure_connection()
+
 
     # -------------------------------------------------------------------------------
     # 资源清理与程序退出处理
