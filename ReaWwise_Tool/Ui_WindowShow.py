@@ -9,7 +9,7 @@
 from PyQt6 import QtCore, QtGui, QtWidgets
 import ctypes
 
-myappid = "wo de app"
+myappid = "my app"
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 class Ui_ReaWwise_Tool(object):
@@ -17,7 +17,7 @@ class Ui_ReaWwise_Tool(object):
         ReaWwise_Tool.setObjectName("ReaWwise_Tool")
         ReaWwise_Tool.resize(610, 360)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("f:\\VS Code Workspace\\[Project_Path]\\Python_Path\\Local\\ReaWwise_Tool\\toolbar_video.png"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon.addPixmap(QtGui.QPixmap("e:\\VSCode_WorkSpace\\Python_Path\\ReaWwise_Tool\\toolbar_video.png"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         ReaWwise_Tool.setWindowIcon(icon)
         self.listView = QtWidgets.QListView(parent=ReaWwise_Tool)
         self.listView.setGeometry(QtCore.QRect(30, 110, 460, 190))
@@ -72,6 +72,10 @@ class Ui_ReaWwise_Tool(object):
         self.groupBox.setGeometry(QtCore.QRect(30, 9, 250, 90))
         self.groupBox.setTitle("")
         self.groupBox.setObjectName("groupBox")
+        # self.Reconnect = QtWidgets.QPushButton(parent=ReaWwise_Tool)
+        # self.Reconnect.setGeometry(QtCore.QRect(150, 310, 75, 30))
+        # self.Reconnect.setStyleSheet("font: 10pt \"Microsoft YaHei UI\";")
+        # # self.Reconnect.setObjectName("Reconnect")
         self.groupBox.raise_()
         self.listView.raise_()
         self.RecordingStart.raise_()
@@ -86,6 +90,7 @@ class Ui_ReaWwise_Tool(object):
         self.LinkCapture.raise_()
         self.Clear.raise_()
         self.SaveLog.raise_()
+        # self.Reconnect.raise_()
 
         # 设置列表视图不可编辑
         self.listView.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -100,7 +105,7 @@ class Ui_ReaWwise_Tool(object):
         self.RecordingStop.setText(_translate("ReaWwise_Tool", "结束"))
         self.Start.setText(_translate("ReaWwise_Tool", "播放"))
         self.PreviouMarker.setText(_translate("ReaWwise_Tool", "转到上一个标记"))
-        self.InputLog.setText(_translate("ReaWwise_Tool", "2. CaptureLog.txt"))
+        self.InputLog.setText(_translate("ReaWwise_Tool", "2. Capture Log.txt"))
         self.InsertMedia.setText(_translate("ReaWwise_Tool", "1. 导入视频"))
         self.Stop.setText(_translate("ReaWwise_Tool", "停止"))
         self.WwhispeAssistant.setText(_translate("ReaWwise_Tool", "Wwhisper \n"
@@ -108,4 +113,5 @@ class Ui_ReaWwise_Tool(object):
         self.NextMarker.setText(_translate("ReaWwise_Tool", "转到下一个标记"))
         self.LinkCapture.setText(_translate("ReaWwise_Tool", "Capture"))
         self.Clear.setText(_translate("ReaWwise_Tool", "清空"))
-        self.SaveLog.setText(_translate("ReaWwise_Tool", "SaveLog"))
+        self.SaveLog.setText(_translate("ReaWwise_Tool", "Save Log"))
+        # self.Reconnect.setText(_translate("ReaWwise_Tool", "重新连接"))
