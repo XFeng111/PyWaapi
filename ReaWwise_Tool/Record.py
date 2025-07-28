@@ -52,7 +52,7 @@ class WwiseProfilerController:
         self.connected = False
         
         # 初始化连接
-        self._initialize_connection()
+        self.initialize_connection()
 
     @staticmethod
     def find_Wwise_window():
@@ -62,7 +62,7 @@ class WwiseProfilerController:
                 return proc.pid
         return None
 
-    def _initialize_connection(self):
+    def initialize_connection(self):
         """初始化Wwise连接"""
         if not self.pid:
             print('未找到Wwise.exe进程,请启动wwise后重新打开程序')
@@ -72,6 +72,8 @@ class WwiseProfilerController:
         try:
             self.app = Application(backend="uia").connect(process=self.pid)
             self.Wwise_window = self.app.window()
+            with self._lock:
+                self.connected = True
             print('成功获取Wwise窗口引用')
         except Exception as e:
             print(f"获取Wwise窗口引用失败: {e}")
@@ -88,16 +90,6 @@ class WwiseProfilerController:
         except Exception as e:
             print(f"Wwise API连接出错: {e}")
 
-    def _connect_window(self):
-        """连接Wwise窗口"""
-        try:
-            self.app = Application(backend="uia").connect(process=self.pid)
-            self.Wwise_window = self.app.window()
-            with self._lock:
-                self.connected = True
-            print('成功连接到Wwise应用')
-        except Exception as e:
-            print(f"连接Wwise失败: {e}")
 
     @async_threadsafe
     def save_capture(self):
@@ -122,9 +114,9 @@ class WwiseProfilerController:
         if not self.connected:
             return "未连接到Wwise，请检查Wwise是否运行"
             
-        return self._sync_start_capture()
+        return self.sync_start_capture()
 
-    def _sync_start_capture(self):
+    def sync_start_capture(self):
         """同步开始捕获操作"""
         try:
             if self.client:
@@ -156,9 +148,9 @@ class WwiseProfilerController:
         if not self.connected:
             return "未连接到Wwise，请检查Wwise是否运行"
             
-        return self._sync_stop_capture()
+        return self.sync_stop_capture()
 
-    def _sync_stop_capture(self):
+    def sync_stop_capture(self):
         """同步停止捕获操作"""
         try:
             if self.client:
@@ -211,6 +203,8 @@ class OBSController:
             try:
                 self.app = Application(backend="uia").connect(process=self.pid)
                 self.obs_window = self.app.window()
+                with self._lock:
+                    self.connected = True
                 print('成功连接到OBS应用')
             except Exception as e:
                 print(f"连接OBS失败: {e}")
@@ -224,7 +218,7 @@ class OBSController:
                 return proc.pid
         return None
 
-    async def _async_operation(self, func):
+    async def async_operation(self, func):
         """改进的异步操作包装器，避免Future状态问题"""
         loop = asyncio.get_event_loop()
         future = loop.create_future()
@@ -252,11 +246,11 @@ class OBSController:
             except Exception as e:
                 return f"未能找到并点击“开始录制”按钮，错误: {e}"
                 
-        return await self._async_operation(_sync_start)
+        return await self.async_operation(_sync_start)
 
     async def recording_stop(self):
         """停止录制（异步执行）"""
-        def _sync_stop():
+        def sync_stop():
             if not self.obs_window:
                 return "未连接到OBS窗口"
                 
@@ -267,7 +261,7 @@ class OBSController:
             except Exception as e:
                 return f"未能找到并点击“停止录制”按钮，错误: {e}"
                 
-        return await self._async_operation(_sync_stop)
+        return await self.async_operation(sync_stop)
 
     def close(self):
         """安全清理OBS资源"""
