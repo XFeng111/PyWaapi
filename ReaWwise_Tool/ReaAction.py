@@ -6,8 +6,8 @@ import threading
 import time
 
 # 创建线程池复用资源
-executor = ThreadPoolExecutor(max_workers=20)
-_executor_shutdown = False  # 线程池关闭标记
+executor = ThreadPoolExecutor(max_workers=4)
+executor_shutdown = False  # 线程池关闭标记
 # 线程锁确保连接操作线程安全
 connection_lock = threading.Lock()
 
@@ -17,10 +17,10 @@ def async_reapy(func):
     async def wrapper(*args, **kwargs):
         loop = asyncio.get_event_loop()
         try:
-            # 使用线程池的超时机制替代reapy.connect的timeout参数
+            # 使用线程池的超时机制
             return await asyncio.wait_for(
                 loop.run_in_executor(executor, func, *args, **kwargs),
-                timeout=30.0  # 5秒超时
+                timeout=20.0  # 20秒超时
             )
         except TimeoutError:
             return "操作超时，请检查Reaper是否响应"
@@ -30,37 +30,37 @@ def async_reapy(func):
 
 def shutdown_executor():
     """确保线程池被正确关闭"""
-    global _executor_shutdown
-    if not _executor_shutdown:
+    global executor_shutdown
+    if not executor_shutdown:
         executor.shutdown(wait=True, cancel_futures=True)
-        _executor_shutdown = True
+        executor_shutdown = True
         print("ReaAction线程池已关闭")
 
 class Rea_Action:
-    _reapy_connected = False  # 连接状态缓存
-    _connection_attempted = False  # 避免重复尝试连接
+    reapy_connected = False  # 连接状态缓存
+    connection_attempted = False  # 避免重复尝试连接
 
     @staticmethod
-    def _ensure_connection():
+    def ensure_connection():
         """确保reapy连接已建立，带重试机制"""
-        if Rea_Action._reapy_connected:
+        if Rea_Action.reapy_connected:
             return True
             
         with connection_lock:
             # 双重检查锁定模式
-            if Rea_Action._reapy_connected:
+            if Rea_Action.reapy_connected:
                 return True
                 
             # 避免重复尝试连接
-            if Rea_Action._connection_attempted:
-                raise ConnectionError("之前的Reaper连接尝试已失败，请检查Reaper是否运行")
+            if Rea_Action.connection_attempted:
+                raise ConnectionError("Reaper连接尝试已失败，请检查Reaper是否运行")
 
             try:
                 # 最多尝试3次连接，移除不支持的timeout参数
                 for attempt in range(3):
                     try:
                         reapy.connect()  # 修复：移除不支持的timeout参数
-                        Rea_Action._reapy_connected = True
+                        Rea_Action.reapy_connected = True
                         print("已连接到Reaper")
                         return True
                     except:
@@ -69,7 +69,7 @@ class Rea_Action:
                             continue
                         raise
             except Exception as e:
-                Rea_Action._connection_attempted = True  # 标记连接尝试失败
+                Rea_Action.connection_attempted = True  # 标记连接尝试失败
                 raise ConnectionError(f"Reaper连接失败: {e}")
 
 
@@ -78,7 +78,7 @@ class Rea_Action:
     def trigger_custom_script_by_guid(guid,name):
         """异步触发自定义脚本"""
         try:
-            if not Rea_Action._ensure_connection():
+            if not Rea_Action.ensure_connection():
                 return "无法连接到Reaper"
                 
             # 验证GUID格式
@@ -96,7 +96,7 @@ class Rea_Action:
     async def rename_camera_tracks_to_listener():
         """异步重命名含camera的轨道"""
         try:
-            Rea_Action._ensure_connection()
+            Rea_Action.ensure_connection()
             project = reapy.Project()
             tracks = project.tracks
 
