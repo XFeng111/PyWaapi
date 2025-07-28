@@ -118,46 +118,77 @@ class Rea_Action:
     # 异步接口方法
     @staticmethod
     async def WwhispeAssistant():
+        """
+        脚本: kusa_Wwhisper Assistant.lua
+        _RSde44f60973f53a2a211f87e97990c5c2cf69590b
+        """
         result = await Rea_Action.trigger_custom_script_by_guid(
-            "_RSde44f60973f53a2a211f87e97990c5c2cf69590b"
+            "_RSde44f60973f53a2a211f87e97990c5c2cf69590b", "WwhispeAssistant"
         )
         print(result)
 
     @staticmethod
     async def Start():
+        """
+        脚本: kusa_Wwhisper.lua
+        _RSc32ceb513fe80bdbf78b7b6be9bb00453b6c6516
+        """
         result = await Rea_Action.trigger_custom_script_by_guid(
-            "_RSc32ceb513fe80bdbf78b7b6be9bb00453b6c6516"
+            "_RSc32ceb513fe80bdbf78b7b6be9bb00453b6c6516", "播放"
         )
         print(result)
 
     @staticmethod
     async def InsertMedia():
-        result = await Rea_Action.trigger_custom_script_by_guid(40018)
+        """
+        插入媒体文件... ⇌ Insert media files...
+        40018
+        """
+        result = await Rea_Action.trigger_custom_script_by_guid(40018, "导入视频")
         print(result)
 
     @staticmethod
     async def Stop():
-        result = await Rea_Action.trigger_custom_script_by_guid(1016)
+        """
+        走带: 停止 ⇌ Transport: Stop
+        1016
+        """
+        result = await Rea_Action.trigger_custom_script_by_guid(1016, "停止")
         print(result)
 
     @staticmethod
     async def PreviouMarker():
-        result = await Rea_Action.trigger_custom_script_by_guid(40172)
+        """
+        标记: 转到上一个标记/工程开始 ⇌ Markers: Go to previous marker/project start
+        40172
+        """
+        result = await Rea_Action.trigger_custom_script_by_guid(40172, "转到上一个标记")
         print(result)
 
     @staticmethod
     async def NextMarker():
-        result = await Rea_Action.trigger_custom_script_by_guid(40173)
+        """
+        标记: 转到下一个标记/工程结束 ⇌ Markers: Go to next marker/project end
+        40173
+        """
+        result = await Rea_Action.trigger_custom_script_by_guid(40173, "转到下一个标记")
         print(result)
 
     @staticmethod
     async def InputLog():
+        """
+        脚本: 一键导入CaptureLog.lua
+        _RS40adae0a80e5768382a400485b2eead586038b35
+
+        def rename_camera_tracks_to_listener() 重命名listener
+        """
         result = await Rea_Action.trigger_custom_script_by_guid(
-            "_RS40adae0a80e5768382a400485b2eead586038b35"
+            "_RS40adae0a80e5768382a400485b2eead586038b35", "CaptureLog.txt"
         )
         rename_result = await Rea_Action.rename_camera_tracks_to_listener()
         print(result)
         print(rename_result)
+        
         
 
 # 测试功能
