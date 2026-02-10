@@ -1,0 +1,11 @@
+# T_CopyOriginalFromSelected
+复制 Wwise 所选对象所含的音频文件到指定位置
+
+# T_Wwise_SetNotes_Tool
+批量设置Note
+
+# T_ActiveSource_Loop
+一键设置Source的Loop，LoopPoint，LoopStart，LoopEnd，Fadetime
+
+# T_Event_Creat_FromActorMixer
+一键为ActorMixer下的子对象创建Play事件到Event默认工作单元，_Lp/Loop尾缀同步创建Stop事件，若对象为Sound类型为其Source设置Loop
