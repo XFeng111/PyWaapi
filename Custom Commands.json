@@ -1,31 +1,98 @@
 {
    "commands":[
        {
-           "id":"T_CopyOriginalFromSelected",
-           "displayName":"CopyOriginalFromSelected",  
-		   "startMode":"MultipleSelectionMultipleProcesses",                    
-           "program":"E:\\VSCode_WorkSpace\\dist_tools\\WAAPI_GetOrigionalFiles_Slected.exe",         
+           "id":"T_CopyOriginalFromSelected.py",
+           "displayName":"[T] CopyOriginalFromSelected",  
+           "program":"py.exe",   
+           "args": "${CurrentCommandDirectory}\\Tools\\T_CopyOriginalFromSelected.py", 
+           "cwd": "",
+           "defaultShortcut": "",
+           "redirectOutputs": "",         
+		   "startMode":"MultipleSelectionSingleProcessSpaceSeparated",                    
            "contextMenu":{
-                    "basePath" : "Tools",  // 右键菜单的子菜单名称（展开栏）
-                    "enabledFor" :  ""
+                    "basePath": "Tools",  
+                    "enabledFor": "",
+                    "visibleFor": ""
                },
            "mainMenu":{
-                   "basePath":"Edit" // 主菜单 Edit 下的菜单
+                   "basePath":"Extra/[T] Tools" 
                }                  
+       },    
+       
+       {
+           "id":"T_Event_Creat_FromActorMixer.py",
+           "displayName":"[T] Event_Creat_FromActorMixer",  
+           "program":"py.exe",
+           "args": "${CurrentCommandDirectory}\\Tools\\T_Event_Creat_FromActorMixer.py",   
+           "cwd": "",
+           "defaultShortcut": "",
+           "redirectOutputs": "",    
+		   "startMode":"MultipleSelectionSingleProcessSpaceSeparated",                    
+           "contextMenu":{
+                    "basePath" : "Tools",  
+                    "enabledFor": "ActorMixer",
+                    "visibleFor": "ActorMixer"
+               },
+           "mainMenu":{
+                   "basePath":"Extra/[T] Tools" 
+               }
        },    
 
        {
-           "id":"T_Wwise_SetNotes_Tool",
-           "displayName":"Wwise_SetNotes_Tool",  
-		   "startMode":"MultipleSelectionMultipleProcesses",                    
-           "program":"E:\\VSCode_WorkSpace\\dist_tools\\Wwise_SetNotes_Tool.exe",         
+           "id":"T_ActiveSource_Loop.py",
+           "displayName":"[T] ActiveSource_Loop",  
+           "program":"py.exe",
+           "args": "${CurrentCommandDirectory}\\Tools\\T_ActiveSource_Loop.py",   
+           "cwd": "",
+           "defaultShortcut": "",
+           "redirectOutputs": "",    
+		   "startMode":"MultipleSelectionSingleProcessSpaceSeparated",                    
            "contextMenu":{
-                    "basePath" : "Tools",  // 右键菜单的子菜单名称（展开栏）
-                    "enabledFor" :  ""
+                    "basePath" : "Tools",  
+                    "enabledFor": "Sound",
+                    "visibleFor": "Sound"
                },
            "mainMenu":{
-                   "basePath":"Edit" // 主菜单 Edit 下的菜单
+                   "basePath":"Extra/[T] Tools" 
+               }
+       },    
+
+       {
+           "id":"T_Wwise_SetNotes_Tool.py",
+           "displayName":"[T] Wwise_SetNotes_Tool",  
+           "program":"py.exe",   
+           "args": "${CurrentCommandDirectory}\\Tools\\T_Wwise_SetNotes_Tool.py", 
+           "cwd": "",
+           "defaultShortcut": "",
+           "redirectOutputs": "",         
+		   "startMode":"SingleSelectionSingleProcess",                    
+           "contextMenu":{
+                    "basePath": "Tools",  
+                    "enabledFor": "",
+                    "visibleFor": ""
+               },
+           "mainMenu":{
+                   "basePath":"Extra/[T] Tools" 
                }                  
-       }    
+       },
+       
+       {
+           "id":"waql-tool.exe",
+           "displayName":"[T] Waql_Tool",  
+           "program": "${CurrentCommandDirectory}\\Tools\\waql-tool\\waql-tool.exe",   
+           "args": "", 
+           "cwd": "",
+           "defaultShortcut": "",
+           "redirectOutputs": "",
+		   "startMode":"SingleSelectionSingleProcess",                    
+           "contextMenu":{
+                    "basePath" : "Tools",  
+                    "enabledFor": "",
+                    "visibleFor": ""
+               },
+           "mainMenu":{
+                   "basePath":"Extra" 
+               }
+       }
    ]
 }
