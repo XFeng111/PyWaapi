@@ -11,4 +11,4 @@
 一键为ActorMixer下的子对象创建Play事件到Event默认工作单元，_Lp/Loop尾缀同步创建Stop事件，若对象为Sound类型为其Source设置Loop
 
 # Tools/T_Rename_WavAndEvent_FromSound
-以Sound名称为基准，统一关联的Wav和Event的名称，并将Wav添加P4版本控制
+以Sound名称为基准，统一关联的Wav和Event名称，并将Wav添加P4版本控制
