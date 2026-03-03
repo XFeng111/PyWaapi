@@ -1,6 +1,25 @@
 {
    "commands":[
        {
+           "id":"T_Rename_WavAndEvent_FromSound.py",
+           "displayName":"[T] T_Rename_WavAndEvent_FromSound",  
+           "program":"py.exe",   
+           "args": "${CurrentCommandDirectory}\\Tools\\T_Rename_WavAndEvent_FromSound.py", 
+           "cwd": "",
+           "defaultShortcut": "",
+           "redirectOutputs": "",         
+		   "startMode":"MultipleSelectionSingleProcessSpaceSeparated",                    
+           "contextMenu":{
+                    "basePath": "Tools",  
+                    "enabledFor": "",
+                    "visibleFor": ""
+               },
+           "mainMenu":{
+                   "basePath":"Extra/[T] Tools" 
+               }                  
+       },
+
+       {
            "id":"T_CopyOriginalFromSelected.py",
            "displayName":"[T] CopyOriginalFromSelected",  
            "program":"py.exe",   
