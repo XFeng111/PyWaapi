@@ -1,0 +1,235 @@
+from waapi import WaapiClient, CannotConnectToWaapiException
+from pprint import pprint
+import msvcrt
+from WAAPI_Functions import Core_object, Core_undo, Ui
+import shutil
+import os
+from P4 import P4, P4Exception
+
+
+def copy_wav_file(source_wav_path, target_dir, new_filename):
+    """
+    将源WAV文件复制到指定路径，并自定义新文件名
+    
+    参数:
+        source_wav_path (str): 源WAV文件的完整路径（如 E:\\test.wav）
+        target_dir (str): 目标文件夹路径（如 D:\\audio\\）
+        new_filename (str): 新文件的名称（无需后缀，函数会自动添加.wav）
+    
+    返回:
+        str: 复制后的文件完整路径；若失败返回空字符串
+    
+    异常处理:
+        捕获文件不存在、路径权限、文件夹不存在等常见错误
+    """
+    try:
+        # 1. 校验源文件是否存在且是.wav文件
+        if not os.path.exists(source_wav_path):
+            print(f"错误：源文件 {source_wav_path} 不存在")
+            return ""
+        if not source_wav_path.lower().endswith(".wav"):
+            print(f"错误：{source_wav_path} 不是WAV文件")
+            return ""
+        
+        # 2. 确保目标文件夹存在，不存在则创建
+        os.makedirs(target_dir, exist_ok=True)
+        
+        # 3. 拼接目标文件完整路径（自动添加.wav后缀）
+        target_wav_path = os.path.join(target_dir, f"{new_filename}.wav")
+        
+        # 4. 复制文件（shutil.copy保留文件元数据，copy2更完整）
+        shutil.copy2(source_wav_path, target_wav_path)
+        
+        print(f"文件复制成功，新命名wav路径：{target_wav_path}")
+        return target_wav_path
+    
+    except PermissionError:
+        print(f"错误：没有权限访问 {target_dir} 或源文件")
+        return ""
+    except Exception as e:
+        print(f"复制失败：未知错误 - {str(e)}")
+        return ""
+    
+def get_originalsSubFolder(file_path):
+    sfx_marker = "SFX"
+    wav_marker = ".wav"
+    # 先检查路径中是否同时包含SFX\\和.wav
+    if sfx_marker not in file_path or wav_marker not in file_path:
+        return ""
+    
+    dir_path = os.path.dirname(file_path)
+    # 找到SFX的结束位置
+    sfx_end_index = file_path.find(sfx_marker) + len(sfx_marker)
+    
+    # 提取中间的字段（去除可能的路径分隔符）
+    target_str = dir_path[sfx_end_index:].strip("\\")
+    
+    return target_str
+
+def unusedSources_delete(c_obj:Core_object, sound_id, obj_name):
+    res_children = c_obj.object_get(sound_id, opt=["children"])["return"][0]['children']
+    for child in res_children:
+        c_id = child["id"]
+        c_name = child["name"]
+        if c_name != obj_name:
+            c_obj.object_delete(c_id)
+            print(f"AudioFile已移除未使用的{c_name}.wav")
+
+def event_targets_pasteProperties(c_obj:Core_object, event_source_id, event_target_id, pasteMode="replaceEntire"):
+    tar_source = c_obj.object_get(event_source_id, ["children.id"])["return"][0]['children.id']
+    tar_target = c_obj.object_get(event_target_id, ["children.id"])["return"][0]['children.id']
+    for s_id, t_id in zip(tar_source, tar_target):
+        c_obj.pasteProperties(s_id, t_id, pasteMode)
+    # print(f"Event的Target属性已复制")
+
+
+def T_Rename_WavAndEvent_FromSound(): # 主函数
+    # 初始化类，传入client
+    c_obj = Core_object(client)
+    ui = Ui(client)
+    objects = ui.getSelectedObjects(["id", "type"])
+    obj_list = objects.get("objects")
+    # debug数据
+    # pprint(obj_list)
+    for obj in obj_list:
+        obj_id = obj["id"]
+        obj_type = obj["type"]
+        if obj_type == "Sound":
+            Rename_FromSound(c_obj, obj_id)
+        else:
+            sound_list = c_obj.getChild_SoundId(obj_id)
+            for sound_id in sound_list:
+                Rename_FromSound(c_obj, sound_id)
+    print("\n--重命名wav,event执行完成--\n")
+
+def Rename_Event(c_obj:Core_object, action_id, sound_name, sound_id):
+    refer_opt = ["parent.name", "parent.id", "parent.parent.parent.path", "parent.parent.type", "parent.parent.name"]
+    refer_list = c_obj.object_get(action_id, refer_opt)['return']
+    # pprint(refer_list)
+
+    for e in refer_list:
+        e_name = e["parent.name"]
+        e_id = e["parent.id"]
+        e_parent_path = e["parent.parent.parent.path"]
+        e_parent_type = e["parent.parent.type"]
+        e_parent_name = e["parent.parent.name"]
+        if "play_" in e_name.lower():
+            res_play = c_obj.play_event_create(sound_name, 
+                            sound_id, 
+                            e_parent_path, 
+                            e_parent_type, 
+                            e_parent_name )
+            event_play = res_play['children'][0]["id"]
+            c_obj.pasteProperties(e_id, event_play, pasteMode="replaceEntire")
+
+            event_targets_pasteProperties(c_obj, e_id, event_play, pasteMode="addReplace")
+            
+        if "stop_" in e_name.lower():
+            res_stop = c_obj.stop_event_create(sound_name, 
+                            sound_id, 
+                            e_parent_path, 
+                            e_parent_type, 
+                            e_parent_name)
+            event_stop = res_stop['children'][0]["id"]
+            c_obj.pasteProperties(e_id, event_stop, pasteMode="replaceEntire")
+
+            event_targets_pasteProperties(c_obj, e_id, event_stop, pasteMode="addReplace")
+    
+    c_obj.object_delete(e_id)
+    # print(f"Event已重命名\n")
+
+def Rename_Wav(c_obj:Core_object, obj_originalWavFilePath, new_filename, sound_path):
+    originalsSubFolder = get_originalsSubFolder(obj_originalWavFilePath)
+    target_dir = os.path.dirname(obj_originalWavFilePath)
+    audioFile = os.path.join(target_dir, f"{new_filename}.wav")
+    objectPath = sound_path
+    objectType = "Sound" 
+    opt = ["id", "name"]
+
+    file_copy = copy_wav_file(obj_originalWavFilePath, target_dir, new_filename)
+
+    res_import = c_obj.audio_import(originalsSubFolder, audioFile, objectPath, objectType, opt, importOperation="useExisting")
+    # pprint(res_import)
+    # print(f"Wav已重命名\n")
+
+
+def Rename_FromSound(c_obj:Core_object, object_id): # 以Sound类型为基准重命名wav，event，删除未使用的wav，并添加版本控制
+    # 获取选中的对象
+    opt = ["id", "name", "id", "path", "sound:originalWavFilePath", "referencesTo.id"]
+    objects = c_obj.object_get(object_id, opt)
+    obj_list = objects.get("return")
+
+    for obj in obj_list:
+        obj_name = obj["name"] 
+        obj_id = obj["id"]
+        obj_path = obj["path"] 
+        obj_originalWavFilePath = obj.get("sound:originalWavFilePath", [])
+        obj_referencesTo_id = obj.get("referencesTo.id", [])
+
+        if obj_originalWavFilePath!= []:
+            target_dir = os.path.dirname(obj_originalWavFilePath)
+            audioFile = os.path.join(target_dir, f"{obj_name}.wav")
+            filename = os.path.splitext(os.path.basename(obj_originalWavFilePath))[0]
+
+            if filename != obj_name:
+                Rename_Wav(c_obj, obj_originalWavFilePath, obj_name, obj_path)
+                unusedSources_delete(c_obj, obj_id, obj_name)
+                print(f"{obj_name}: Wav已重命名\n")
+
+                try:
+                    p4.run("delete", obj_originalWavFilePath)
+                    p4.run("add", audioFile)
+                    print(f"{obj_name}: p4执行成功")
+
+                except Exception as e:
+                    print(f"{obj_name}: p4执行失败：{e}\n")
+            else:
+                print(f"{obj_name}: wav名称一致，无需修改，已跳过执行")
+        else:
+            print(f"{obj_name}: 未找到wav文件，已跳过执行")
+
+        if obj_referencesTo_id != []:
+            for refer_id in obj_referencesTo_id:
+                event_name = c_obj.object_get(refer_id, ["parent.name"])["return"][0]["parent.name"]
+                if obj_name != event_name[5:]:
+                    Rename_Event(c_obj, refer_id, obj_name, obj_id)
+                    print(f"{obj_name}: Event已重命名,Target属性已复制\n")
+                else:
+                    print(f"{obj_name}: event名称一致，无需修改，已跳过执行")
+        else:
+            print(f"{obj_name}: 未找到event，已跳过执行")
+
+if __name__ == "__main__":
+    try:
+        client = WaapiClient()
+        print("✅ 已连接 Wwise WAAPI")
+    except CannotConnectToWaapiException as e:
+        print(f"❌ 无法连接 WAAPI:{e},请打开 Wwise 并确保 WAAPI 已启用")
+    else:
+        # 开始某个 Undo Group
+        c_undo = Core_undo(client)
+        c_undo.undo_beginGroup()
+        p4 = P4()
+        try:
+            p4.connect()
+            # info = p4.run("info")
+            # clientRoot = info[0]["clientRoot"]
+            # print(info)
+            # print(clientRoot)
+        except P4Exception:
+            for e in p4.erroes:
+                print(e)
+
+        T_Rename_WavAndEvent_FromSound() # 调用主函数
+
+        # 结束某个 Undo Group
+        c_undo.undo_endGroup("T_Rename_WavAndEvent_FromSound")
+
+        # 断开连接
+        client.disconnect() # 必须手动关闭连接，否则文件会被占用
+        print("✅ 已断开 WAAPI 连接")
+
+    finally:
+        # input("\n按 Enter 键退出...") # 等待用户按下 Enter 键,macOS/Linux使用
+        print("\n按任意键退出...")
+        msvcrt.getch() # 等待用户按下任意键,Windows使用
