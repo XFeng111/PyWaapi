@@ -4,7 +4,6 @@ import msvcrt
 from WAAPI_Functions import Core_object, Core_undo, Ui
 import shutil
 import os
-from P4 import P4, P4Exception
 
 
 def copy_wav_file(source_wav_path, target_dir, new_filename):
@@ -102,40 +101,13 @@ def T_Rename_WavAndEvent_FromSound(): # 主函数
                 Rename_FromSound(c_obj, sound_id)
     print("\n--重命名wav,event执行完成--\n")
 
-def Rename_Event(c_obj:Core_object, action_id, sound_name, sound_id):
-    refer_opt = ["parent.name", "parent.id", "parent.parent.parent.path", "parent.parent.type", "parent.parent.name"]
-    refer_list = c_obj.object_get(action_id, refer_opt)['return']
-    # pprint(refer_list)
-
-    for e in refer_list:
-        e_name = e["parent.name"]
-        e_id = e["parent.id"]
-        e_parent_path = e["parent.parent.parent.path"]
-        e_parent_type = e["parent.parent.type"]
-        e_parent_name = e["parent.parent.name"]
-        if "play_" in e_name.lower():
-            res_play = c_obj.play_event_create(sound_name, 
-                            sound_id, 
-                            e_parent_path, 
-                            e_parent_type, 
-                            e_parent_name )
-            event_play = res_play['children'][0]["id"]
-            c_obj.pasteProperties(e_id, event_play, pasteMode="replaceEntire")
-
-            event_targets_pasteProperties(c_obj, e_id, event_play, pasteMode="addReplace")
-            
-        if "stop_" in e_name.lower():
-            res_stop = c_obj.stop_event_create(sound_name, 
-                            sound_id, 
-                            e_parent_path, 
-                            e_parent_type, 
-                            e_parent_name)
-            event_stop = res_stop['children'][0]["id"]
-            c_obj.pasteProperties(e_id, event_stop, pasteMode="replaceEntire")
-
-            event_targets_pasteProperties(c_obj, e_id, event_stop, pasteMode="addReplace")
+def Rename_Event(c_obj:Core_object, event_id, event_name, new_name):
+    if event_name[:4] == "Play":
+        c_obj.object_setName(event_id, "Play_"+new_name)
     
-    c_obj.object_delete(e_id)
+    if event_name[:4] == "Stop":
+        c_obj.object_setName(event_id, "Stop_"+new_name)
+
     # print(f"Event已重命名\n")
 
 def Rename_Wav(c_obj:Core_object, obj_originalWavFilePath, new_filename, sound_path):
@@ -174,15 +146,17 @@ def Rename_FromSound(c_obj:Core_object, object_id): # 以Sound类型为基准重
             if filename != obj_name:
                 Rename_Wav(c_obj, obj_originalWavFilePath, obj_name, obj_path)
                 unusedSources_delete(c_obj, obj_id, obj_name)
-                print(f"{obj_name}: Wav已重命名\n")
+                print(f"{obj_name}: Wav已重命名")
 
                 try:
-                    p4.run("delete", obj_originalWavFilePath)
-                    p4.run("add", audioFile)
-                    print(f"{obj_name}: p4执行成功")
+                    res_add = c_obj.sourceControl_add(audioFile)
+                    # pprint(res_add)
+                    res_add = c_obj.sourceControl_delete(obj_originalWavFilePath)
+                    # pprint(res_add)
+                    print(f"{obj_name}: sourceControl执行成功")
 
                 except Exception as e:
-                    print(f"{obj_name}: p4执行失败：{e}\n")
+                    print(f"{obj_name}: sourceControl执行失败：{e}\n")
             else:
                 print(f"{obj_name}: wav名称一致，无需修改，已跳过执行")
         else:
@@ -190,14 +164,16 @@ def Rename_FromSound(c_obj:Core_object, object_id): # 以Sound类型为基准重
 
         if obj_referencesTo_id != []:
             for refer_id in obj_referencesTo_id:
-                event_name = c_obj.object_get(refer_id, ["parent.name"])["return"][0]["parent.name"]
+                event = c_obj.object_get(refer_id, ["parent.name", "parent.id"])["return"][0]
+                event_name = event["parent.name"]
+                event_id = event["parent.id"]
                 if obj_name != event_name[5:]:
-                    Rename_Event(c_obj, refer_id, obj_name, obj_id)
-                    print(f"{obj_name}: Event已重命名,Target属性已复制\n")
+                    Rename_Event(c_obj, event_id, event_name, obj_name)
+                    print(f"{obj_name}: Event已重命名\n")
                 else:
-                    print(f"{obj_name}: event名称一致，无需修改，已跳过执行")
+                    print(f"{obj_name}: event名称一致，无需修改，已跳过执行\n")
         else:
-            print(f"{obj_name}: 未找到event，已跳过执行")
+            print(f"{obj_name}: 未找到event，已跳过执行\n")
 
 if __name__ == "__main__":
     try:
@@ -209,16 +185,6 @@ if __name__ == "__main__":
         # 开始某个 Undo Group
         c_undo = Core_undo(client)
         c_undo.undo_beginGroup()
-        p4 = P4()
-        try:
-            p4.connect()
-            # info = p4.run("info")
-            # clientRoot = info[0]["clientRoot"]
-            # print(info)
-            # print(clientRoot)
-        except P4Exception:
-            for e in p4.erroes:
-                print(e)
 
         T_Rename_WavAndEvent_FromSound() # 调用主函数
 
