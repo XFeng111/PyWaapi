@@ -62,19 +62,12 @@ class Core_object(WwiseBase):
                 }
         return self.client.call("ak.wwise.core.object.setProperty",args)
 
-    def object_setName(self, object_id, new_name):
+    def setName(self, object_id, new_name):
         args = {
             "object": object_id,
             "value": new_name
         }
         return self.client.call("ak.wwise.core.object.setName", args)
-
-    def setName(self, object_id, value):
-        args ={
-                "object": object_id,
-                "value": value
-                }
-        return self.client.call("ak.wwise.core.object.setName",args)
 
     def pasteProperties(self, source_id, targets_id, pasteMode:str="replaceEntire"):
         args = {
