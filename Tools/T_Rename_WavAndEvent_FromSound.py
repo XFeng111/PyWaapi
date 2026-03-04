@@ -103,10 +103,10 @@ def T_Rename_WavAndEvent_FromSound(): # 主函数
 
 def Rename_Event(c_obj:Core_object, event_id, event_name, new_name):
     if event_name[:4] == "Play":
-        c_obj.object_setName(event_id, "Play_"+new_name)
+        c_obj.setName(event_id, "Play_"+new_name)
     
     if event_name[:4] == "Stop":
-        c_obj.object_setName(event_id, "Stop_"+new_name)
+        c_obj.setName(event_id, "Stop_"+new_name)
 
     # print(f"Event已重命名\n")
 
@@ -199,3 +199,4 @@ if __name__ == "__main__":
         # input("\n按 Enter 键退出...") # 等待用户按下 Enter 键,macOS/Linux使用
         print("\n按任意键退出...")
         msvcrt.getch() # 等待用户按下任意键,Windows使用
+
