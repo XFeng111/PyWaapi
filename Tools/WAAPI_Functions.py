@@ -62,6 +62,20 @@ class Core_object(WwiseBase):
                 }
         return self.client.call("ak.wwise.core.object.setProperty",args)
 
+    def object_setName(self, object_id, new_name):
+        args = {
+            "object": object_id,
+            "value": new_name
+        }
+        return self.client.call("ak.wwise.core.object.setName", args)
+
+    def setName(self, object_id, value):
+        args ={
+                "object": object_id,
+                "value": value
+                }
+        return self.client.call("ak.wwise.core.object.setName",args)
+
     def pasteProperties(self, source_id, targets_id, pasteMode:str="replaceEntire"):
         args = {
             "source": source_id,
@@ -150,6 +164,18 @@ class Core_object(WwiseBase):
         }
         print(f"✅ 创建事件 Stop_{event_name}, 路径：{parent_path}\\{parent_name}\\Stop_{event_name}")
         return self.client.call("ak.wwise.core.object.create", args)
+
+    def sourceControl_add(self, file):
+        args = {
+            "files": [file]
+        }
+        return self.client.call("ak.wwise.core.sourceControl.add", args)
+    
+    def sourceControl_delete(self, file):
+        args = {
+            "files": [file]
+        }
+        return self.client.call("ak.wwise.core.sourceControl.delete", args)
 
 class Core_undo(WwiseBase):
     def undo_beginGroup(self):
