@@ -169,9 +169,9 @@ def Rename_FromSound(c_obj:Core_object, object_id): # 以Sound类型为基准重
                 event_id = event["parent.id"]
                 if obj_name != event_name[5:]:
                     Rename_Event(c_obj, event_id, event_name, obj_name)
-                    print(f"{obj_name}: Event已重命名\n")
+                    print(f"{event_name}: Event已重命名\n")
                 else:
-                    print(f"{obj_name}: event名称一致，无需修改，已跳过执行\n")
+                    print(f"{event_name}: event名称一致，无需修改，已跳过执行\n")
         else:
             print(f"{obj_name}: 未找到event，已跳过执行\n")
 
@@ -199,4 +199,5 @@ if __name__ == "__main__":
         # input("\n按 Enter 键退出...") # 等待用户按下 Enter 键,macOS/Linux使用
         print("\n按任意键退出...")
         msvcrt.getch() # 等待用户按下任意键,Windows使用
+
 
