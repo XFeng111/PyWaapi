@@ -30,7 +30,7 @@ class Core_object(WwiseBase):
     # res_child = getChild_SoundId("{874CC972-8752-4D28-9563-0ABFCEFA1DCB}")
     # pprint(res_child)
 
-    def audio_import(self, originalsSubFolder, audioFile, objectPath, objectType, opt:list, importOperation:str="useExisting"):
+    def audio_import(self, originalsSubFolder, audioFile, objectPath, objectType, opt:list, importOperation:str="useExisting", importLanguage:str = "SFX"):
         args = {
             # useExisting ：使用现有对象（如有），更新给定属性；否则，创建新的对象。该项为默认值。
             # replaceExisting ：创建新的对象；若存在同名的现有对象，则将现有对象销毁。
@@ -38,7 +38,7 @@ class Core_object(WwiseBase):
 
             "importOperation": importOperation, 
             "default": {
-                "importLanguage": "SFX"
+                "importLanguage": importLanguage 
             },
             "imports": [
                 {
