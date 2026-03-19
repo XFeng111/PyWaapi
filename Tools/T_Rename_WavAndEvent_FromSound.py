@@ -49,21 +49,22 @@ def copy_wav_file(source_wav_path, target_dir, new_filename):
         print(f"复制失败：未知错误 - {str(e)}")
         return ""
     
-def get_originalsSubFolder(file_path):
-    sfx_marker = "SFX"
+def get_originalsSubFolder(file_path, marker="SFX"):
+    markers = [marker, "CN", "EN"]
     wav_marker = ".wav"
-    # 先检查路径中是否同时包含SFX\\和.wav
-    if sfx_marker not in file_path or wav_marker not in file_path:
-        return ""
+    # 先检查路径中是否同时包含 marker\\和.wav
+    for new_marker in markers:
+        if (new_marker+"\\") in file_path and wav_marker in file_path:
+            dir_path = os.path.dirname(file_path)
+            # 找到 new_marker 的结束位置
+            sfx_end_index = file_path.find(new_marker) + len(new_marker)
+            # 提取中间的字段（去除可能的路径分隔符）
+            target_str = dir_path[sfx_end_index:].strip("\\")
+            
+            return target_str, new_marker
     
-    dir_path = os.path.dirname(file_path)
-    # 找到SFX的结束位置
-    sfx_end_index = file_path.find(sfx_marker) + len(sfx_marker)
-    
-    # 提取中间的字段（去除可能的路径分隔符）
-    target_str = dir_path[sfx_end_index:].strip("\\")
-    
-    return target_str
+    # 如果所有 marker 都不在 file_path 中，则返回空
+    return "", ""
 
 def unusedSources_delete(c_obj:Core_object, sound_id, obj_name):
     res_children = c_obj.object_get(sound_id, opt=["children"])["return"][0]['children']
@@ -104,24 +105,25 @@ def T_Rename_WavAndEvent_FromSound(): # 主函数
 def Rename_Event(c_obj:Core_object, event_id, event_name, new_name):
     if event_name[:4] == "Play":
         c_obj.setName(event_id, "Play_"+new_name)
+        print(f"{event_name}: Event已重命名 --> Play_{new_name}\n")
     
     if event_name[:4] == "Stop":
         c_obj.setName(event_id, "Stop_"+new_name)
+        print(f"{event_name}: Event已重命名 --> Stop_{new_name}\n")
 
-    # print(f"Event已重命名\n")
 
 def Rename_Wav(c_obj:Core_object, obj_originalWavFilePath, new_filename, sound_path):
-    originalsSubFolder = get_originalsSubFolder(obj_originalWavFilePath)
+    originalsSubFolder, lang_marker = get_originalsSubFolder(obj_originalWavFilePath)
     target_dir = os.path.dirname(obj_originalWavFilePath)
     audioFile = os.path.join(target_dir, f"{new_filename}.wav")
     objectPath = sound_path
     objectType = "Sound" 
-    opt = ["id", "name"]
+    opt = ["id", "name", "path", "sound:originalWavFilePath"]
 
     file_copy = copy_wav_file(obj_originalWavFilePath, target_dir, new_filename)
 
-    res_import = c_obj.audio_import(originalsSubFolder, audioFile, objectPath, objectType, opt, importOperation="useExisting")
-    # pprint(res_import)
+    res_import = c_obj.audio_import(originalsSubFolder, audioFile, objectPath, objectType, opt, "useExisting", lang_marker)
+    pprint(res_import)
     # print(f"Wav已重命名\n")
 
 
@@ -169,7 +171,7 @@ def Rename_FromSound(c_obj:Core_object, object_id): # 以Sound类型为基准重
                 event_id = event["parent.id"]
                 if obj_name != event_name[5:]:
                     Rename_Event(c_obj, event_id, event_name, obj_name)
-                    print(f"{event_name}: Event已重命名\n")
+                    # print(f"{event_name}: Event已重命名\n")
                 else:
                     print(f"{event_name}: event名称一致，无需修改，已跳过执行\n")
         else:
@@ -199,5 +201,3 @@ if __name__ == "__main__":
         # input("\n按 Enter 键退出...") # 等待用户按下 Enter 键,macOS/Linux使用
         print("\n按任意键退出...")
         msvcrt.getch() # 等待用户按下任意键,Windows使用
-
-
