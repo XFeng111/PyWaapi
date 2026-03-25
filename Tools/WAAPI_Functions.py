@@ -26,11 +26,10 @@ class Core_object(WwiseBase):
                 exit() # 终止脚本
 
         return child_list
-
     # res_child = getChild_SoundId("{874CC972-8752-4D28-9563-0ABFCEFA1DCB}")
     # pprint(res_child)
 
-    def audio_import(self, originalsSubFolder, audioFile, objectPath, objectType, opt:list, importOperation:str="useExisting", importLanguage:str = "SFX"):
+    def audio_import(self, originalsSubFolder, audioFile, objectPath, objectType, opt:list, importOperation:str="useExisting"):
         args = {
             # useExisting ：使用现有对象（如有），更新给定属性；否则，创建新的对象。该项为默认值。
             # replaceExisting ：创建新的对象；若存在同名的现有对象，则将现有对象销毁。
@@ -38,7 +37,7 @@ class Core_object(WwiseBase):
 
             "importOperation": importOperation, 
             "default": {
-                "importLanguage": importLanguage 
+                "importLanguage": "SFX"
             },
             "imports": [
                 {
@@ -79,6 +78,15 @@ class Core_object(WwiseBase):
         }
         
         return self.client.call("ak.wwise.core.object.pasteProperties", args)
+
+    def object_create(self, parent, name, obj_type, onNameConflict:str="merge"):
+        args = {
+            "parent":parent,
+            "name":name,
+            "type":obj_type,
+            "onNameConflict": onNameConflict
+        }
+        return self.client.call("ak.wwise.core.object.create", args)
 
     def object_delete(self, object):
         args = {
@@ -157,6 +165,100 @@ class Core_object(WwiseBase):
         }
         print(f"✅ 创建事件 Stop_{event_name}, 路径：{parent_path}\\{parent_name}\\Stop_{event_name}")
         return self.client.call("ak.wwise.core.object.create", args)
+    
+    def event_creat_FromOld(self, object_name, object_id, ActionType:int=1): # 1-Play, 2-Stop
+        object_parent_id = self.object_get(object_id, ["parent.id"]) ['return'][0]['parent.id']
+        parent_children = self.object_get(object_parent_id, ["children.id"]) ['return'][0]['children.id']
+
+        for child_id in parent_children:
+            child_refer = self.object_get(child_id, ["referencesTo"]) ['return'][0]
+            e_parent_path = ""
+            if child_refer != {}:
+                refer_id = child_refer['referencesTo'][0]['id']
+                event_info = self.object_get(refer_id, ["parent.parent.path", "parent.parent.type"]) ['return'][0]
+                e_parent_path = event_info['parent.parent.path']
+                e_parent_type = event_info['parent.parent.type']
+                print(f"找到已有资源的Event创建路径：{e_parent_path}，类型：{e_parent_type}")
+                break
+
+        if e_parent_path != "" and e_parent_path != "\\Events":
+            e_parent_path_parts = [part for part in e_parent_path.split("\\") if part]
+            e_parent_name = e_parent_path_parts[-1]
+            e_parent_Cr_path = ""
+            for p in e_parent_path_parts[:-1]: # 从开头 取到 倒数第二个 结束
+                e_parent_Cr_path = e_parent_Cr_path+"\\"+p
+
+            if ActionType == 1:
+                self.play_event_create(object_name, object_id, e_parent_Cr_path, e_parent_type, e_parent_name, "merge")
+                return "play event"
+            
+            if ActionType == 2:
+                self.stop_event_create(object_name, object_id, e_parent_Cr_path, e_parent_type, e_parent_name, "merge")
+                return "stop event"
+            
+        elif e_parent_path == "\\Events": # 默认Event路径创建
+            if ActionType == 1:
+                self.play_event_create(object_name, object_id)
+                return "play event"
+            
+            if ActionType == 2:
+                self.stop_event_create(object_name, object_id)
+                return "stop event"
+
+        else:
+            print(f"error: 没有找到Event路径，请检查 {object_name} 同层级的已有资源是否有创建Event")
+            return "error"
+    # c_obj.event_creat_FromOld(object_name, object_id, 1) # play event
+    # c_obj.event_creat_FromOld(object_name, object_id, 2) # stop event
+
+    def event_creat_FromActorPath(self, object_name, object_id, ActionType:int=1): # 1-Play, 2-Stop
+        object_parent_info = self.object_get(object_id, ["parent.path", "parent.id"])
+        object_parent_path = object_parent_info ['return'][0]['parent.path']
+        object_parent_id = object_parent_info ['return'][0]['parent.id']
+
+        parent_children = self.object_get(object_parent_id, ["children.id"]) ['return'][0]['children.id']
+        child_id = parent_children[0]
+
+        child_refer = self.object_get(child_id, ["referencesTo"]) ['return'][0]
+        o_parent_path_parts = [part for part in object_parent_path.split("\\") if part]
+
+        if child_refer == {}:
+
+            e_parent_Cr_path = "\\Events"
+            e_parent_name = o_parent_path_parts[1]
+
+            # 创建对应 Work Unit，注意WorkUnit 会打断前面的 undo 组
+            self.object_create("\\Events", e_parent_name, "WorkUnit", "merge")
+
+            # 创建对应的文件夹结构
+            if len(o_parent_path_parts)-1 >= 2:
+                for i in range(1, len(o_parent_path_parts)-1): # 从第二个取到结束
+                    e_parent_Cr_path = e_parent_Cr_path+"\\"+ o_parent_path_parts[i]
+                    e_parent_name = o_parent_path_parts[i+1] # 获取父级文件夹名称
+                    self.object_create(e_parent_Cr_path, e_parent_name, "Folder", "merge")
+            
+            print("未找到已有资源的Event结构，已按照ActorMixer创建Event结构")
+            
+            if ActionType == 1:
+                self.play_event_create(object_name, object_id, e_parent_Cr_path, "Folder", e_parent_name, "merge")
+                return "play event"
+            
+            if ActionType == 2:
+                self.stop_event_create(object_name, object_id, e_parent_Cr_path, "Folder", e_parent_name, "merge")
+                return "stop event"
+
+            print("已按照ActorMixer结构创建Event")
+
+        else:
+            if ActionType == 1:
+                self.event_creat_FromOld(object_name, object_id, 1) # play event
+                return "play event"
+        
+            if ActionType == 2:
+                self.event_creat_FromOld(object_name, object_id, 2) # stop event
+                return "stop event"
+    # c_obj.event_creat_FromActorPath(object_name, object_id, 1) # play event
+    # c_obj.event_creat_FromActorPath(object_name, object_id, 2) # stop event
 
     def sourceControl_add(self, file):
         args = {
@@ -170,6 +272,7 @@ class Core_object(WwiseBase):
         }
         return self.client.call("ak.wwise.core.sourceControl.delete", args)
 
+
 class Core_undo(WwiseBase):
     def undo_beginGroup(self):
         return self.client.call("ak.wwise.core.undo.beginGroup")
@@ -178,6 +281,7 @@ class Core_undo(WwiseBase):
         return self.client.call("ak.wwise.core.undo.endGroup", {"displayName": displayName})
         # displayName 在历史记录中针对此 Undo Group 显示的名称
         # client.call("ak.wwise.core.undo.endGroup", {"displayName": "T_Event_Creat_FromActorMixer"})
+
 
 class Ui(WwiseBase):
     def getSelectedObjects(self, opt:list):
