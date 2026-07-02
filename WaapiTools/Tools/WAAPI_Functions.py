@@ -102,10 +102,21 @@ class Core_object(WwiseBase):
             "onNameConflict": onNameConflict
         }
         return self.client.call("ak.wwise.core.object.create", args)
-
-    def object_delete(self, object):
+    
+    def object_copy(self, object_id, parent, onNameConflict, opt:list):
         args = {
-            "object": object
+            "object": object_id,
+            "parent": parent,
+            "onNameConflict": onNameConflict
+        }
+        options = {
+            "return": opt
+        }
+        return self.client.call("ak.wwise.core.object.copy", args, options=options)
+
+    def object_delete(self, object_id):
+        args = {
+            "object": object_id
         }
         return self.client.call("ak.wwise.core.object.delete", args)
 

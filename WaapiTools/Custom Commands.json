@@ -18,6 +18,25 @@
                    "basePath":"Extra/[T] Tools" 
                }
        },    
+       
+        {
+           "id":"T_Vo_CreatSoundEvent_1P.py",
+           "displayName":"[T] Vo_CreatSoundEvent_1P",  
+           "program":"py.exe",
+           "args": "${CurrentCommandDirectory}\\Tools\\T_Vo_CreatSoundEvent_1P.py",   
+           "cwd": "",
+           "defaultShortcut": "",
+           "redirectOutputs": "",    
+		   "startMode":"MultipleSelectionSingleProcessSpaceSeparated",                    
+           "contextMenu":{
+                    "basePath" : "Tools",  
+                    "enabledFor": "ActorMixer",
+                    "visibleFor": "ActorMixer"
+               },
+           "mainMenu":{
+                   "basePath":"Extra/[T] Tools" 
+               }
+       },    
 
         {
            "id":"T_Vo_SetPlayerSwitch_FromActorMixer.py",
