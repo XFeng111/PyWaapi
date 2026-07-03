@@ -65,7 +65,7 @@ def get_event_parent_folder(c_obj, src_obj_id):
     return None
 
 
-def T_Vo_CreatSoundEvent_1P():
+def T_Vo_Creat1P_FromActorMixer():
     c_obj = Core_object(client)
     ui    = Ui(client)
 
@@ -158,6 +158,10 @@ def T_Vo_CreatSoundEvent_1P():
                 src_l2_name = l2_name[:-3]          # 去掉末尾 "_1P" 对应源名称
                 folder_info = src_l2_event_map.get(src_l2_name)
 
+                # 用 src_l2_name 最后一个 _ 后的字段替换为 1P
+                # 例：src_l2_name = A_A_b -> rsplit('_',1) -> ['A_A', 'b'] -> A_A_1P
+                event_name = src_l2_name.rsplit('_', 1)[0] + '_1P'
+
                 if folder_info:
                     folder_path = folder_info['path']
                     folder_type = folder_info['type']
@@ -168,22 +172,22 @@ def T_Vo_CreatSoundEvent_1P():
                     parent_cr_path = '\\' + '\\'.join(parts[:-1]) if len(parts) > 1 else '\\Events'
                     try:
                         c_obj.play_event_create(
-                            l2_name, l2['id'],
+                            event_name, l2['id'],
                             parent_cr_path, folder_type, parent_name,
                             "merge"
                         )
-                        created_events.append(f"Play_{l2_name} → {folder_path}")
+                        created_events.append(f"Play_{event_name} → {folder_path}")
                     except Exception as e:
-                        msg = f"创建 Play_{l2_name} 失败：{e}"
+                        msg = f"创建 Play_{event_name} 失败：{e}"
                         errors.append(msg)
                         print(f"  ❌ {msg}")
                 else:
                     # 未找到源 Event 路径，使用默认路径
                     try:
-                        c_obj.play_event_create(l2_name, l2['id'])
-                        created_events.append(f"Play_{l2_name} → \\Events（默认）")
+                        c_obj.play_event_create(event_name, l2['id'])
+                        created_events.append(f"Play_{event_name} → \\Events（默认）")
                     except Exception as e:
-                        msg = f"创建 Play_{l2_name} 失败（默认路径）：{e}"
+                        msg = f"创建 Play_{event_name} 失败（默认路径）：{e}"
                         errors.append(msg)
                         print(f"  ❌ {msg}")
 
@@ -216,9 +220,9 @@ if __name__ == "__main__":
         c_undo = Core_undo(client)
         c_undo.undo_beginGroup()
 
-        T_Vo_CreatSoundEvent_1P()
+        T_Vo_Creat1P_FromActorMixer()
 
-        c_undo.undo_endGroup("T_Vo_CreatSoundEvent_1P")
+        c_undo.undo_endGroup("T_Vo_Creat1P_FromActorMixer")
 
         client.disconnect()
         print("✅ 已断开 WAAPI 连接")
