@@ -20,10 +20,10 @@
        },    
        
         {
-           "id":"T_Vo_CreatSoundEvent_1P.py",
-           "displayName":"[T] Vo_CreatSoundEvent_1P",  
+           "id":"T_Vo_Creat1P_FromActorMixer.py",
+           "displayName":"[T] Vo_Creat1P_FromActorMixer",  
            "program":"py.exe",
-           "args": "${CurrentCommandDirectory}\\Tools\\T_Vo_CreatSoundEvent_1P.py",   
+           "args": "${CurrentCommandDirectory}\\Tools\\T_Vo_Creat1P_FromActorMixer.py",   
            "cwd": "",
            "defaultShortcut": "",
            "redirectOutputs": "",    
